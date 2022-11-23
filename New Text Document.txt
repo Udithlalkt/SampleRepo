@@ -1,3 +1,56 @@
-Hi.
 
-Select and upload your files (maximum 100 MB total):
+function executeTests(fileName, apiName,env) {
+
+    var newman = require("newman"); // require Newman in your project
+
+    let fileFillPath = "./collections/"+fileName
+    let expFileName = "./Report/"+apiName+"_"+env+'.html'
+    let globalsFileName =  "./workspace.postman_globals_"+env+".json"
+
+    // call newman.run to pass `options` object and wait for callback
+    newman.run(
+    {
+        collection: require(fileFillPath),
+        globals: globalsFileName.replace(/(\r\n|\n|\r)/gm,""), // carriage return issue \r
+        reporters: ["htmlextra", "cli"],
+        reporter: {
+            htmlextra: {
+                title: 'External Kong Pre-Test Report - '+apiName+"("+env+")",
+                titleSize: '6',
+                browserTitle: 'Test Report',
+                skipHeaders:"Authorization",
+                export: expFileName.replace(/(\r\n|\n|\r)/gm,"")
+            }
+        }
+    },
+    function (err) {
+        if (err) {
+        throw err;
+        }
+        console.log("collection run complete for "+apiName);
+    }
+    );
+  }
+
+
+//Starting Text Execution
+const ReadLines = require('n-readlines');
+const readLines = new ReadLines('APILIstFile.txt');
+let line;
+while ((line = readLines.next())) {
+    let lineData = line.toString('ascii');
+    //avoid line starts with #
+    if(! lineData.startsWith("#")){
+
+        let names=lineData.split(":");
+        let envList=names[2].split(",");
+        if(envList.length > 1){
+            for(let env of envList){
+                executeTests(names[0].trim(),names[1].trim(),env.trim());
+            }
+        }else
+            executeTests(names[0].trim(),names[1].trim(),names[2].trim());
+    }
+    
+}
+//Ending Text Execution
